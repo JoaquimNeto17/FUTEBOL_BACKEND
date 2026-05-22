@@ -1,10 +1,12 @@
 # =========================================================
-# app.py - GERADOR DE MODO CARREIRA OTIMIZADO v4.0
+# app.py - GERADOR DE MODO CARREIRA OTIMIZADO v4.2
 # =========================================================
 
 import os
 import json
 import random
+import time
+
 from collections import deque
 
 from flask import Flask, jsonify
@@ -37,6 +39,16 @@ client = genai.Client(api_key=GEMINI_API_KEY)
 
 app = Flask(__name__)
 CORS(app)
+
+# =========================================================
+# MODELOS DISPONÍVEIS
+# =========================================================
+
+MODELOS = [
+    "gemini-2.5-flash-lite",
+    "gemini-2.5-flash",
+    "gemini-1.5-flash"
+]
 
 # =========================================================
 # HISTÓRICO ANTI-REPETIÇÃO
@@ -100,59 +112,6 @@ PAIS_POR_LIGA = {
 }
 
 # =========================================================
-# CLUBES POR LIGA
-# =========================================================
-
-CLUBES_POR_LIGA = {
-    "Premier League": [
-        "Brighton",
-        "Crystal Palace",
-        "Wolves",
-        "Bournemouth",
-        "Brentford"
-    ],
-
-    "Bundesliga": [
-        "Stuttgart",
-        "Mainz",
-        "Werder Bremen",
-        "Augsburg"
-    ],
-
-    "Serie A Enilive": [
-        "Torino",
-        "Udinese",
-        "Parma",
-        "Genoa"
-    ],
-
-    "LALIGA EA SPORTS": [
-        "Real Betis",
-        "Celta Vigo",
-        "Getafe",
-        "Osasuna"
-    ],
-
-    "Liga Portugal": [
-        "Braga",
-        "Boavista",
-        "Vitória SC"
-    ],
-
-    "Eredivisie": [
-        "AZ Alkmaar",
-        "Twente",
-        "Heerenveen"
-    ],
-
-    "Scottish Premiership": [
-        "Hearts",
-        "Hibernian",
-        "Aberdeen"
-    ]
-}
-
-# =========================================================
 # MODERAÇÃO
 # =========================================================
 
@@ -169,14 +128,20 @@ PALAVRAS_PROIBIDAS = [
 ]
 
 def contem_conteudo_proibido(texto):
+
     texto = texto.lower()
-    return any(p in texto for p in PALAVRAS_PROIBIDAS)
+
+    return any(
+        palavra in texto
+        for palavra in PALAVRAS_PROIBIDAS
+    )
 
 # =========================================================
 # VALIDAÇÃO
 # =========================================================
 
 def validar_liga(liga):
+
     return liga in LIGAS_PERMITIDAS
 
 # =========================================================
@@ -194,13 +159,14 @@ def registrar_desafio(clube, liga):
         historico_paises.append(pais)
 
 # =========================================================
-# ESCOLHAS INTELIGENTES
+# ESCOLHER LIGA
 # =========================================================
 
 def escolher_liga():
 
     ligas_disponiveis = [
-        liga for liga in LIGAS_PERMITIDAS
+        liga
+        for liga in LIGAS_PERMITIDAS
         if liga.lower() not in historico_ligas
     ]
 
@@ -209,53 +175,42 @@ def escolher_liga():
 
     return random.choice(ligas_disponiveis)
 
-def escolher_clube(liga):
-
-    clubes = CLUBES_POR_LIGA.get(liga)
-
-    if not clubes:
-        return None
-
-    clubes_disponiveis = [
-        clube for clube in clubes
-        if clube.lower() not in historico_clubes
-    ]
-
-    if not clubes_disponiveis:
-        clubes_disponiveis = clubes
-
-    return random.choice(clubes_disponiveis)
-
 # =========================================================
-# PROMPT OTIMIZADO
+# PROMPT
 # =========================================================
 
-def gerar_prompt(liga, clube):
+def gerar_prompt(liga):
 
-    clubes_bloqueados = ", ".join(list(historico_clubes)[-5:])
-    paises_bloqueados = ", ".join(list(historico_paises)[-3:])
+    clubes_bloqueados = ", ".join(
+        list(historico_clubes)[-5:]
+    )
+
+    paises_bloqueados = ", ".join(
+        list(historico_paises)[-3:]
+    )
 
     prompt = f"""
-Crie um desafio de Modo Carreira extremamente criativo.
+Crie um desafio criativo e realista de Modo Carreira FIFA.
 
 LIGA:
 {liga}
 
-CLUBE:
-{clube}
+IMPORTANTE:
+- Escolha um clube REALISTA dessa liga
+- NÃO escolha clubes extremamente óbvios
+- Evite repetir clubes recentes
 
-REGRAS:
-- Não repita ideias genéricas
-- Crie narrativa cinematográfica
-- Use contexto histórico realista
-- Gere objetivos difíceis
-- Faça algo imersivo
+Crie:
+- narrativa imersiva
+- objetivos difíceis
+- restrições únicas
+- contexto realista
 
-EVITAR:
+Evite repetir:
 Clubes recentes: {clubes_bloqueados}
 Países recentes: {paises_bloqueados}
 
-Retorne APENAS JSON válido.
+Retorne apenas JSON válido.
 """
 
     return prompt
@@ -266,7 +221,7 @@ Retorne APENAS JSON válido.
 
 def generate_career_challenge():
 
-    max_tentativas = 2
+    max_tentativas = 3
 
     for tentativa in range(max_tentativas):
 
@@ -274,16 +229,15 @@ def generate_career_challenge():
 
             liga = escolher_liga()
 
-            clube = escolher_clube(liga)
+            prompt = gerar_prompt(liga)
 
-            if not clube:
-                clube = "Escolha automaticamente"
+            modelo = random.choice(MODELOS)
 
-            prompt = gerar_prompt(liga, clube)
+            print(f"Modelo usado: {modelo}")
 
             response = client.models.generate_content(
 
-                model="gemini-2.5-flash-lite",
+                model=modelo,
 
                 contents=prompt,
 
@@ -295,22 +249,33 @@ def generate_career_challenge():
 
                     response_schema=MODO_CARREIRA_SCHEMA,
 
-                    temperature=1.05,
+                    temperature=0.9,
 
                     top_p=0.9,
 
                     top_k=32,
 
-                    max_output_tokens=650
+                    max_output_tokens=500
                 )
             )
+
+            if not response.text:
+
+                raise Exception("Resposta vazia da IA.")
 
             texto = response.text.strip()
 
             desafio = json.loads(texto)
 
-            liga_gerada = desafio.get("liga_do_clube", liga)
-            clube_gerado = desafio.get("clube_escolhido", clube)
+            liga_gerada = desafio.get(
+                "liga_do_clube",
+                liga
+            )
+
+            clube_gerado = desafio.get(
+                "clube_escolhido",
+                "Clube não informado"
+            )
 
             # =========================================================
             # VALIDAÇÃO
@@ -328,18 +293,29 @@ def generate_career_challenge():
 
                 continue
 
-            registrar_desafio(clube_gerado, liga_gerada)
+            registrar_desafio(
+                clube_gerado,
+                liga_gerada
+            )
 
             return desafio
+
+        except json.JSONDecodeError:
+
+            print("JSON inválido recebido.")
+
+            time.sleep(2)
 
         except Exception as e:
 
             print(f"Erro tentativa {tentativa + 1}: {e}")
 
-            if tentativa == max_tentativas - 1:
-                raise
+            time.sleep(2)
 
-    raise Exception("Falha ao gerar desafio válido.")
+    return {
+        "erro": True,
+        "mensagem": "IA temporariamente indisponível."
+    }
 
 # =========================================================
 # ROTAS
@@ -351,8 +327,8 @@ def root():
     return jsonify({
         "status": "success",
         "api": "Gerador de Modo Carreira",
-        "version": "4.0",
-        "modelo": "gemini-2.5-flash-lite",
+        "version": "4.2",
+        "modelos": MODELOS,
         "ligas": len(LIGAS_PERMITIDAS)
     })
 
@@ -363,7 +339,9 @@ def generate():
 
         desafio = generate_career_challenge()
 
-        if contem_conteudo_proibido(json.dumps(desafio)):
+        if contem_conteudo_proibido(
+            json.dumps(desafio)
+        ):
 
             return jsonify({
                 "status": "error",
@@ -425,12 +403,12 @@ def reset():
 if __name__ == "__main__":
 
     print("=" * 60)
-    print("🎮 GERADOR DE MODO CARREIRA v4.0")
+    print("🎮 GERADOR DE MODO CARREIRA v4.2")
     print("=" * 60)
 
     print(f"✅ {len(LIGAS_PERMITIDAS)} ligas carregadas")
-    print(f"✅ Sistema anti-repetição ativo")
-    print(f"✅ Modelo: gemini-2.5-flash-lite")
+    print("✅ Sistema anti-repetição ativo")
+    print(f"✅ Modelos: {', '.join(MODELOS)}")
 
     print("=" * 60)
 
@@ -447,4 +425,4 @@ if __name__ == "__main__":
 
     print("=" * 60)
 
-    app.run(debug=True)
+    app.run(host="0.0.0.0", port=5000)
