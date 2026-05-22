@@ -65,8 +65,8 @@ def generate_career_challenge():
             system_instruction=SYSTEM_INSTRUCTION,
             response_mime_type="application/json",
             response_schema=MODO_CARREIRA_SCHEMA,
-            temperature=1.0, # Temperatura alta para garantir o máximo de aleatoriedade nos times escolhidos
-            max_output_tokens=1200
+            temperature=0.7,
+            max_output_tokens=500
         )
     )
 
