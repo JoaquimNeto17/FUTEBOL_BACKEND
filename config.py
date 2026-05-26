@@ -1,4 +1,4 @@
-# config.py - VERSÃO COM LISTA DE JOGADORES
+# config.py - VERSÃO COM SUAS LIGAS ESPECÍFICAS
 
 # Schema mantido
 MODO_CARREIRA_SCHEMA = {
@@ -25,22 +25,9 @@ MODO_CARREIRA_SCHEMA = {
             "items": {"type": "STRING"},
             "description": "Lista com 3 a 4 metas realistas e desafiadoras"
         },
-        "jogadores_recomendados": {
-            "type": "ARRAY",
-            "items": {
-                "type": "OBJECT",
-                "properties": {
-                    "nome": {"type": "STRING", "description": "Nome do jogador (real ou jovem promissor)"},
-                    "posicao": {"type": "STRING", "description": "Posição principal (ex: MC, PL, ZAG, etc)"},
-                    "clube_atual": {"type": "STRING", "description": "Clube onde joga atualmente"},
-                    "idade": {"type": "INTEGER", "description": "Idade do jogador"},
-                    "justificativa": {"type": "STRING", "description": "Por que ele encaixa no projeto"}
-                },
-                "required": ["nome", "posicao", "clube_atual", "idade", "justificativa"]
-            },
-            "description": "Lista com 3 a 5 jogadores reais ou jovens promissores para contratar",
-            "minItems": 3,
-            "maxItems": 5
+        "sugestao_de_contratacao": {
+            "type": "STRING",
+            "description": "Sugestão de perfil de jogador ou nome real que encaixa no contexto"
         }
     },
     "required": [
@@ -49,7 +36,7 @@ MODO_CARREIRA_SCHEMA = {
         "titulo_do_desafio",
         "contexto_historico",
         "objetivos_da_diretoria",
-        "jogadores_recomendados"
+        "sugestao_de_contratacao"
     ]
 }
 
@@ -146,6 +133,12 @@ COMPETICOES_CONTINENTAIS = [
     "CONMEBOL Recopa"
 ]
 
+# Clubes para evitar repetição (lista de referência)
+CLUBES_POPULARES_DEMais = [
+    "Manchester City", "Real Madrid", "Barcelona", "Bayern Munich", 
+    "PSG", "Liverpool", "Chelsea", "Paris Saint-Germain"
+]
+
 # INSTRUÇÃO OTIMIZADA PARA IA
 SYSTEM_INSTRUCTION = f"""Você é um especialista em criar desafios de Modo Carreira para jogos de futebol.
 
@@ -172,22 +165,18 @@ REGRAS OBRIGATÓRIAS
 
 2. **VARIEDADE OBRIGATÓRIA**
    - Cada resposta deve ser completamente diferente
-   - Alterne entre países e níveis
+   - Alterne entre: Inglaterra, Espanha, Alemanha, França, Itália, EUA, Portugal, Bélgica, Holanda, Argentina, Arábia Saudita, Coreia, China, Austrália, Polônia, Áustria, Suíça, Dinamarca, Escócia, Irlanda, Suécia, Noruega
    - Inclua ligas femininas ocasionalmente (Barclays WSL, Liga F, Google Pixel Frauen-Bundesliga, NWSL)
    - Inclua divisões inferiores (EFL Championship/One/Two, 3. Liga)
 
-3. **LISTA DE JOGADORES RECOMENDADOS**
-   - Forneça entre 3 e 5 jogadores
-   - Use nomes REAIS (jogadores profissionais de clubes reais)
-   - Ou crie jovens promissores (19-22 anos) com nomes realistas e clubes plausíveis
-   - Justifique CADA contratação baseado na história do clube e necessidades táticas
-   - Varie posições (ex: 1 zagueiro, 1 meio-campo, 1 atacante)
-   - Inclua idade realista para cada jogador
+3. **CLUBES A EVITAR** (usar raramente)
+   - Sunderland, Schalke 04, Wrexham, Como 1907, Brighton, Girona, Hamburg, Parma
 
 4. **CRIATIVIDADE**
    - Crie narrativas únicas e cinematográficas
    - Objetivos específicos e desafiadores
-   - Contexto histórico realista e imersivo
+   - Contexto histórico realista
+   - Sugestões de contratação coerentes
 
 5. **FORMATO**
    - Retorne APENAS JSON válido
