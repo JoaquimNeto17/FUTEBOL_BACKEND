@@ -1,9 +1,7 @@
-# =========================================================
-# config.py - VERSÃO OTIMIZADA v5.0 (CORRIGIDA)
-# =========================================================
+# config.py - VERSÃO OTIMIZADA v5.0
 
 # =========================================================
-# SCHEMA DO DESAFIO (Structured Outputs)
+# SCHEMA DO DESAFIO
 # =========================================================
 
 MODO_CARREIRA_SCHEMA = {
@@ -180,45 +178,62 @@ COMPETICOES_CONTINENTAIS = [
 # INSTRUÇÃO DO SISTEMA PARA IA (OTIMIZADA)
 # =========================================================
 
-SYSTEM_INSTRUCTION = """Você é um especialista em scout e gestão de futebol, criando desafios de Modo Carreira para EA FC 26.
+SYSTEM_INSTRUCTION = f"""Você é um especialista em scout e gestão de futebol, criando desafios de Modo Carreira para EA FC 26.
+
+========================================
+LIGAS PERMITIDAS (USE SOMENTE ESTAS)
+========================================
+
+{chr(10).join(f'• {liga}' for liga in LIGAS_PERMITIDAS[:30])}
 
 ========================================
 REGRAS OBRIGATÓRIAS
 ========================================
 
 1. **JOGADORES REAIS APENAS**
-   - NUNCA invente jogadores. Use apenas nomes reais, clubes reais e idades correspondentes à realidade atual.
+   - NUNCA invente jogadores
+   - Use nomes reais, clubes reais, idades reais
+   - Pesquise mentalmente seu banco de dados de futebol
 
 2. **CONTEXTO DO CLUBE**
-   - Times pequenos → jovens promessas ou veteranos livres.
-   - Times médios → destaques de ligas secundárias.
-   - Times grandes → estrelas consolidadas mundiais.
-   - Respeite o orçamento implícito e a reputação da liga selecionada.
+   - Times pequenos → jovens promessas ou veteranos
+   - Times médios → jogadores de ligas secundárias
+   - Times grandes → estrelas consolidadas
+   - Respeite o orçamento implícito da liga
 
-3. **VARIEDADE DE PERFIS DE RECOMENDAÇÃO**
-   - Jovens Talentos (18-22 anos): Potencial alto de evolução e revenda futura.
-   - Jogadores no Auge (23-28 anos): Retorno técnico e performance imediata em campo.
-   - Veteranos (29+ anos): Liderança de vestiário, experiência em torneios e consistência tática.
+3. **VARIEDADE DE PERFIS**
+   - Jovens (18-22 anos) - potencial de revenda
+   - Auge (23-28 anos) - performance imediata
+   - Veteranos (29+ anos) - liderança e experiência
 
-4. **ESTRUTURA DOS OBJETIVOS**
-   - Devem ser realistas e baseados na história ou momento atual do clube.
-   - Mescle metas de curto prazo (primeira temporada) com longo prazo (estabilização ou títulos).
-   - Adicione sempre uma meta focada no desenvolvimento de categorias de base ou rede de observação (Scout).
+4. **POSIÇÕES E ESTILOS**
+   - Defesa: solidez, antecipação, força física
+   - Meio-campo: criatividade, passe, visão de jogo
+   - Ataque: velocidade, finalização, 1x1
+
+5. **OBJETIVOS REALISTAS**
+   - Baseados na realidade do clube
+   - Misture curto, médio e longo prazo
+   - Inclua metas de desenvolvimento de jovens
 
 ========================================
 FORMATO DE RESPOSTA
 ========================================
-Retorne estritamente o JSON válido mapeado no response_schema. 
-Não use blocos de código markdown (como ```json).
-Escreva todas as descrições, justificativas e metas em Português do Brasil."""
+
+Retorne APENAS JSON válido, sem markdown, sem texto extra.
+Use português do Brasil para todos os textos.
+
+SEJA CRIATIVO, IMPREVISÍVEL E REALISTA!"""
 
 # =========================================================
 # CONFIGURAÇÕES ADICIONAIS
 # =========================================================
 
+# Limites de rate limiting (opcional)
 RATE_LIMIT = {
     "requests_per_minute": 10,
     "requests_per_day": 1000
 }
 
+# Timeout em segundos
 REQUEST_TIMEOUT = 30
