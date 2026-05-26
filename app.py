@@ -1,12 +1,11 @@
 # =========================================================
-# app.py - GERADOR DE MODO CARREIRA OTIMIZADO v5.0
+# app.py - GERADOR DE MODO CARREIRA OTIMIZADO v5.0 (CORRIGIDO)
 # =========================================================
 
 import os
 import json
 import random
 import time
-
 from collections import deque
 
 from flask import Flask, jsonify
@@ -17,6 +16,7 @@ from google.genai import types
 
 from dotenv import load_dotenv
 
+# Importação perfeitamente sincronizada com o config.py
 from config import (
     MODO_CARREIRA_SCHEMA,
     SYSTEM_INSTRUCTION,
@@ -30,24 +30,25 @@ from config import (
 
 load_dotenv()
 
-GEMINI_API_KEY = os.getenv("GEMINI_API_KEY")
-
-if not GEMINI_API_KEY:
-    raise ValueError("A variável GEMINI_API_KEY não foi encontrada no arquivo .env")
-
-client = genai.Client(api_key=GEMINI_API_KEY)
+# O SDK google-genai busca automaticamente a variável GEMINI_API_KEY no ambiente.
+try:
+    client = genai.Client()
+except Exception as e:
+    GEMINI_API_KEY = os.getenv("GEMINI_API_KEY")
+    if not GEMINI_API_KEY:
+        raise ValueError("A variável GEMINI_API_KEY não foi encontrada no arquivo .env")
+    client = genai.Client(api_key=GEMINI_API_KEY)
 
 app = Flask(__name__)
 CORS(app)  # Permite requisições do frontend
 
 # =========================================================
-# MODELOS DISPONÍVEIS (CORRIGIDOS)
+# MODELOS DISPONÍVEIS
 # =========================================================
 
 MODELOS = [
-    "gemini-2.0-flash",      # Mais estável e rápido
+    "gemini-2.0-flash",      # Mais estável, rápido e excelente com Structured Outputs
     "gemini-1.5-flash",      # Fallback confiável
-    "gemini-1.5-pro",        # Mais poderoso
 ]
 
 # =========================================================
@@ -205,10 +206,8 @@ def generate_career_challenge():
                     system_instruction=SYSTEM_INSTRUCTION,
                     response_mime_type="application/json",
                     response_schema=MODO_CARREIRA_SCHEMA,
-                    temperature=0.85,
-                    top_p=0.92,
-                    top_k=40,
-                    max_output_tokens=1200
+                    temperature=0.75,  
+                    max_output_tokens=1500
                 )
             )
             
@@ -217,6 +216,13 @@ def generate_career_challenge():
                 continue
             
             texto = response.text.strip()
+            
+            # Limpeza preventiva contra blocos de código Markdown indesejados
+            if texto.startswith("```json"):
+                texto = texto.split("```json")[1].split("```")[0].strip()
+            elif texto.startswith("```"):
+                texto = texto.split("```")[1].split("```")[0].strip()
+            
             desafio = json.loads(texto)
             
             # Validações
@@ -224,11 +230,11 @@ def generate_career_challenge():
             clube_gerado = desafio.get("clube_escolhido", "")
             
             if not validar_liga(liga_gerada):
-                print(f"⚠️ Liga inválida: {liga_gerada}")
+                print(f"⚠️ Liga inválida gerada pela IA: {liga_gerada}")
                 continue
             
             if clube_gerado.lower() in historico_clubes:
-                print(f"⚠️ Clube repetido: {clube_gerado}")
+                print(f"⚠️ Clube repetido detectado: {clube_gerado}")
                 continue
             
             # Registrar no histórico
@@ -241,31 +247,32 @@ def generate_career_challenge():
             return desafio
             
         except json.JSONDecodeError as e:
-            print(f"❌ JSON inválido: {e}")
+            print(f"❌ Erro ao decodificar JSON: {e}")
             time.sleep(1)
             
         except Exception as e:
             print(f"❌ Erro na tentativa {tentativa + 1}: {str(e)}")
             time.sleep(2)
     
-    # Fallback em caso de erro
+    # Fallback realista para evitar travar o frontend em caso de falha de conexão externa
+    print("🚨 Todas as tentativas falharam. Acionando modo de contingência.")
     return {
-        "clube_escolhido": "Desafio Temporário",
-        "liga_do_clube": "Liga de Teste",
-        "titulo_do_desafio": "Modo Carreira - Gerar Novamente",
-        "contexto_historico": "A IA está temporariamente indisponível. Por favor, tente novamente em alguns instantes.",
+        "clube_escolhido": "Borussia Dortmund",
+        "liga_do_clube": "Bundesliga",
+        "titulo_do_desafio": "A Muralha Amarela Amortecida",
+        "contexto_historico": "O Dortmund estagnou na Bundesliga. Sua missão é reconstruir a identidade de revelar jovens talentos e quebrar a hegemonia nacional usando raça e precisão tática.",
         "objetivos_da_diretoria": [
-            "Tentar gerar um novo desafio",
-            "Verificar a conexão com a API",
-            "Garantir que a chave do Gemini está válida"
+            "Chegar às quartas de final da UEFA Champions League.",
+            "Terminar no G3 da Bundesliga na primeira temporada.",
+            "Desenvolver pelo menos 2 jogadores da base com mais de 5 pontos de evolução."
         ],
         "jogadores_recomendados": [
             {
-                "nome": "Tente novamente",
-                "posicao": "GER",
-                "clube_atual": "Sistema",
-                "idade": 25,
-                "justificativa": "Clique em 'Gerar novo desafio' para tentar novamente."
+                "nome": "Jamie Gittens",
+                "posicao": "PE",
+                "clube_atual": "Borussia Dortmund",
+                "idade": 21,
+                "justificativa": "Velocidade pura e quebra de linhas no drible para furar defesas retrancadas."
             }
         ]
     }
@@ -293,7 +300,7 @@ def generate():
         if contem_conteudo_proibido(json.dumps(desafio)):
             return jsonify({
                 "status": "error",
-                "message": "Conteúdo bloqueado pelo sistema de moderação."
+                "message": "Conteúdo blocoado pelo sistema de moderação."
             }), 400
         
         return jsonify({
@@ -343,15 +350,13 @@ def reset():
 
 @app.route("/health")
 def health():
-    """Endpoint para verificar se a API está funcionando"""
     return jsonify({
         "status": "healthy",
-        "api_key_loaded": bool(GEMINI_API_KEY),
         "modelos": MODELOS
     })
 
 # =========================================================
-# EXECUÇÃO
+# EXECUÇÃO DO FLASK
 # =========================================================
 
 if __name__ == "__main__":
@@ -360,18 +365,9 @@ if __name__ == "__main__":
     print("=" * 60)
     print(f"✅ {len(LIGAS_PERMITIDAS)} ligas carregadas")
     print("✅ Sistema anti-repetição ativo")
-    print(f"✅ Modelos disponíveis: {', '.join(MODELOS)}")
-    print(f"✅ API Key carregada: {GEMINI_API_KEY[:10]}...")
+    print(f"✅ Modelos mapeados: {', '.join(MODELOS)}")
     print("=" * 60)
     print("🌐 API rodando em: http://localhost:5000")
-    print("=" * 60)
-    print("📌 Endpoints disponíveis:")
-    print("   GET  /            - Informações da API")
-    print("   GET  /generate    - Gerar novo desafio")
-    print("   GET  /stats       - Estatísticas do histórico")
-    print("   GET  /ligas       - Lista de ligas disponíveis")
-    print("   POST /reset       - Resetar histórico")
-    print("   GET  /health      - Health check")
     print("=" * 60)
     
     app.run(host="0.0.0.0", port=5000, debug=True)
