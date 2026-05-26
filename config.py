@@ -1,6 +1,6 @@
-# config.py - VERSÃO COM SUAS LIGAS ESPECÍFICAS
+# config.py - VERSÃO COM IA GERANDO JOGADORES REAIS
 
-# Schema mantido
+# Schema com lista de jogadores
 MODO_CARREIRA_SCHEMA = {
     "type": "OBJECT",
     "properties": {
@@ -25,9 +25,22 @@ MODO_CARREIRA_SCHEMA = {
             "items": {"type": "STRING"},
             "description": "Lista com 3 a 4 metas realistas e desafiadoras"
         },
-        "sugestao_de_contratacao": {
-            "type": "STRING",
-            "description": "Sugestão de perfil de jogador ou nome real que encaixa no contexto"
+        "jogadores_recomendados": {
+            "type": "ARRAY",
+            "items": {
+                "type": "OBJECT",
+                "properties": {
+                    "nome": {"type": "STRING", "description": "Nome do jogador real que se encaixa no perfil tático e contexto do clube"},
+                    "posicao": {"type": "STRING", "description": "Posição principal (ex: ZAG, LD, LE, VOL, MC, MCO, PD, PE, PL)"},
+                    "clube_atual": {"type": "STRING", "description": "Clube onde joga atualmente (real)"},
+                    "idade": {"type": "INTEGER", "description": "Idade do jogador"},
+                    "justificativa": {"type": "STRING", "description": "Por que ele se encaixa no sistema tático e no projeto do clube"}
+                },
+                "required": ["nome", "posicao", "clube_atual", "idade", "justificativa"]
+            },
+            "description": "Lista com 3 a 5 jogadores REAIS que se encaixam no perfil tático e necessidades do clube",
+            "minItems": 3,
+            "maxItems": 5
         }
     },
     "required": [
@@ -36,11 +49,11 @@ MODO_CARREIRA_SCHEMA = {
         "titulo_do_desafio",
         "contexto_historico",
         "objetivos_da_diretoria",
-        "sugestao_de_contratacao"
+        "jogadores_recomendados"
     ]
 }
 
-# SUAS LIGAS EXATAMENTE COMO FORNECIDAS
+# LIGAS PERMITIDAS
 LIGAS_PERMITIDAS = [
     # Inglaterra
     "Premier League",
@@ -121,7 +134,7 @@ LIGAS_PERMITIDAS = [
     "Eliteserien"
 ]
 
-# Competições Continentais (para menção nos objetivos)
+# Competições Continentais
 COMPETICOES_CONTINENTAIS = [
     "UEFA Champions League",
     "UEFA Europa League", 
@@ -130,17 +143,12 @@ COMPETICOES_CONTINENTAIS = [
     "UEFA Women's Champions League",
     "CONMEBOL Libertadores",
     "CONMEBOL Sudamericana",
-    "CONMEBOL Recopa"
+    "CONMEBOL Recopa",
+    "FIFA Club World Cup"
 ]
 
-# Clubes para evitar repetição (lista de referência)
-CLUBES_POPULARES_DEMais = [
-    "Manchester City", "Real Madrid", "Barcelona", "Bayern Munich", 
-    "PSG", "Liverpool", "Chelsea", "Paris Saint-Germain"
-]
-
-# INSTRUÇÃO OTIMIZADA PARA IA
-SYSTEM_INSTRUCTION = f"""Você é um especialista em criar desafios de Modo Carreira para jogos de futebol.
+# INSTRUÇÃO COMPLETA PARA A IA
+SYSTEM_INSTRUCTION = f"""Você é um especialista em scout e gestão de futebol, criando desafios de Modo Carreira para EA FC 26.
 
 ========================================
 LIGAS PERMITIDAS (USE SOMENTE ESTAS)
@@ -149,38 +157,90 @@ LIGAS PERMITIDAS (USE SOMENTE ESTAS)
 {chr(10).join(f'- {liga}' for liga in LIGAS_PERMITIDAS)}
 
 ========================================
-COMPETIÇÕES PERMITIDAS PARA OBJETIVOS
+COMPETIÇÕES PARA OBJETIVOS
 ========================================
 
 {chr(10).join(f'- {comp}' for comp in COMPETICOES_CONTINENTAIS)}
 
 ========================================
-REGRAS OBRIGATÓRIAS
+REGRAS OBRIGATÓRIAS - JOGADORES
 ========================================
 
-1. **ESCOLHA DE CLUBES**
+Ao recomendar jogadores, você DEVE:
+
+1. **USAR JOGADORES REAIS**
+   - Nomes reais de jogadores profissionais
+   - Clubes atuais corretos
+   - Idades precisas
+   - NUNCA inventar jogadores
+
+2. **ANALISAR O CONTEXTO DO CLUBE**
+   - Se o clube precisa de defesa → recomende zagueiros/laterais
+   - Se precisa de criatividade → meias armadores
+   - Se precisa de gols → atacantes finalizadores
+   - Se é time pequeno → jovens promissores ou veteranos experientes
+   - Se é time grande → estrelas consolidadas
+
+3. **JUSTIFICAR CADA CONTRATAÇÃO**
+   - Como o jogador se encaixa no sistema tático
+   - Que lacuna ele preenche no elenco
+   - Potencial de revenda (se for jovem)
+   - Experiência (se for veterano)
+
+4. **VARIEDADE DE PERFIS**
+   - Misture jovens promissores (19-22 anos)
+   - Jogadores no auge (23-28 anos)
+   - Veteranos experientes (29+ anos) quando fizer sentido
+   - Diferentes nacionalidades e estilos de jogo
+
+5. **MERCADO COMPATÍVEL**
+   - Jogadores que o clube poderia realisticamente contratar
+   - Considere orçamento do clube (implícito pela liga)
+   - Evite jogadores "impossíveis" para times pequenos
+
+========================================
+EXEMPLO DE JOGADORES REAIS POR PERFIL
+========================================
+
+DEFESA SÓLIDA:
+- Gonçalo Inácio (ZAG, 22, Sporting CP) - saída de bola e juventude
+- Giorgio Scalvini (ZAG, 20, Atalanta) - força física e projeção
+- Micky van de Ven (ZAG, 22, Tottenham) - velocidade e recuperação
+
+MEIO-CAMPO CRIATIVO:
+- Florian Wirtz (MCO, 21, Bayer Leverkusen) - visão de jogo e drible
+- Xavi Simons (MCO, 21, RB Leipzig) - versatilidade ofensiva
+- João Neves (MC, 19, Benfica) - passe e inteligência tática
+
+ATAQUE VELOZ:
+- Nico Williams (PE, 21, Athletic Bilbao) - velocidade e 1x1
+- Rasmus Højlund (PL, 21, Manchester United) - força e finalização
+- Mathys Tel (PL, 18, Bayern Munich) - mobilidade e faro de gol
+
+LATERAL OFENSIVO:
+- Jeremie Frimpong (LD, 23, Bayer Leverkusen) - profundidade e cruzamento
+- Álex Balde (LE, 20, Barcelona) - ultrapassagem constante
+
+========================================
+OUTRAS REGRAS OBRIGATÓRIAS
+========================================
+
+1. **CLUBES**
    - Use clubes DENTRO das ligas permitidas
-   - NUNCA invente ligas ou use ligas fora da lista
-   - Varie entre diferentes países e níveis
+   - Varie entre países e níveis
+   - Inclua ligas femininas ocasionalmente
+   - Inclua divisões inferiores
 
-2. **VARIEDADE OBRIGATÓRIA**
-   - Cada resposta deve ser completamente diferente
-   - Alterne entre: Inglaterra, Espanha, Alemanha, França, Itália, EUA, Portugal, Bélgica, Holanda, Argentina, Arábia Saudita, Coreia, China, Austrália, Polônia, Áustria, Suíça, Dinamarca, Escócia, Irlanda, Suécia, Noruega
-   - Inclua ligas femininas ocasionalmente (Barclays WSL, Liga F, Google Pixel Frauen-Bundesliga, NWSL)
-   - Inclua divisões inferiores (EFL Championship/One/Two, 3. Liga)
-
-3. **CLUBES A EVITAR** (usar raramente)
-   - Sunderland, Schalke 04, Wrexham, Como 1907, Brighton, Girona, Hamburg, Parma
-
-4. **CRIATIVIDADE**
-   - Crie narrativas únicas e cinematográficas
+2. **CRIATIVIDADE NAS NARRATIVAS**
+   - Cada desafio deve ser único e cinematográfico
+   - Contexto histórico realista e imersivo
    - Objetivos específicos e desafiadores
-   - Contexto histórico realista
-   - Sugestões de contratação coerentes
 
-5. **FORMATO**
+3. **FORMATO**
    - Retorne APENAS JSON válido
    - Sem markdown, sem explicações extras
    - Use português do Brasil
 
-SEJA IMPREVISÍVEL E CRIATIVO! CADA DESAFIO DEVE PARECER UM EPISÓDIO ÚNICO DE UMA SÉRIE DOCUMENTÁRIA."""
+**IMPORTANTE**: Você é um DIRETOR TÉCNICO experiente. Cada jogador recomendado deve fazer sentido TÁTICO para o clube escolhido. Pense no estilo de jogo, nas carências do elenco e no orçamento disponível.
+
+SEJA IMPREVISÍVEL, CRIATIVO E REALISTA! CADA DESAFIO É UM EPISÓDIO ÚNICO DE UMA SÉRIE DOCUMENTÁRIA SOBRE GESTÃO DE FUTEBOL."""
