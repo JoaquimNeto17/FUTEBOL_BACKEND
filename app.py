@@ -363,7 +363,7 @@ if __name__ == "__main__":
     print(f"✅ Modelos disponíveis: {', '.join(MODELOS)}")
     print(f"✅ API Key carregada: {GEMINI_API_KEY[:10]}...")
     print("=" * 60)
-    print("🌐 API rodando em: http://localhost:5000")
+    print("🌐 API rodando em: https://futebol-backend.vercel.app/generate")
     print("=" * 60)
     print("📌 Endpoints disponíveis:")
     print("   GET  /            - Informações da API")
