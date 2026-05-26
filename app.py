@@ -1,5 +1,5 @@
 # =========================================================
-# app.py - GERADOR DE MODO CARREIRA OTIMIZADO v4.2
+# app.py - GERADOR DE MODO CARREIRA OTIMIZADO v5.0
 # =========================================================
 
 import os
@@ -33,19 +33,21 @@ load_dotenv()
 GEMINI_API_KEY = os.getenv("GEMINI_API_KEY")
 
 if not GEMINI_API_KEY:
-    raise ValueError("A variável GEMINI_API_KEY não foi encontrada.")
+    raise ValueError("A variável GEMINI_API_KEY não foi encontrada no arquivo .env")
 
 client = genai.Client(api_key=GEMINI_API_KEY)
 
 app = Flask(__name__)
-CORS(app)
+CORS(app)  # Permite requisições do frontend
 
 # =========================================================
-# MODELOS DISPONÍVEIS
+# MODELOS DISPONÍVEIS (CORRIGIDOS)
 # =========================================================
 
 MODELOS = [
-    "gemini-3.1-flash-lite",
+    "gemini-2.0-flash",      # Mais estável e rápido
+    "gemini-1.5-flash",      # Fallback confiável
+    "gemini-1.5-pro",        # Mais poderoso
 ]
 
 # =========================================================
@@ -114,32 +116,19 @@ PAIS_POR_LIGA = {
 # =========================================================
 
 PALAVRAS_PROIBIDAS = [
-    "matar",
-    "terrorismo",
-    "nazismo",
-    "racismo",
-    "sexo",
-    "porno",
-    "droga",
-    "suicidio",
-    "crime"
+    "matar", "terrorismo", "nazismo", "racismo", 
+    "sexo", "porno", "droga", "suicidio", "crime"
 ]
 
 def contem_conteudo_proibido(texto):
-
     texto = texto.lower()
-
-    return any(
-        palavra in texto
-        for palavra in PALAVRAS_PROIBIDAS
-    )
+    return any(palavra in texto for palavra in PALAVRAS_PROIBIDAS)
 
 # =========================================================
 # VALIDAÇÃO
 # =========================================================
 
 def validar_liga(liga):
-
     return liga in LIGAS_PERMITIDAS
 
 # =========================================================
@@ -147,12 +136,9 @@ def validar_liga(liga):
 # =========================================================
 
 def registrar_desafio(clube, liga):
-
     historico_clubes.append(clube.lower())
     historico_ligas.append(liga.lower())
-
     pais = PAIS_POR_LIGA.get(liga)
-
     if pais:
         historico_paises.append(pais)
 
@@ -161,16 +147,14 @@ def registrar_desafio(clube, liga):
 # =========================================================
 
 def escolher_liga():
-
     ligas_disponiveis = [
-        liga
-        for liga in LIGAS_PERMITIDAS
+        liga for liga in LIGAS_PERMITIDAS 
         if liga.lower() not in historico_ligas
     ]
-
+    
     if not ligas_disponiveis:
         ligas_disponiveis = LIGAS_PERMITIDAS
-
+    
     return random.choice(ligas_disponiveis)
 
 # =========================================================
@@ -178,194 +162,160 @@ def escolher_liga():
 # =========================================================
 
 def gerar_prompt(liga):
+    clubes_bloqueados = ", ".join(list(historico_clubes)[-5:])
+    paises_bloqueados = ", ".join(list(historico_paises)[-3:])
+    
+    prompt = f"""Crie um desafio criativo e realista de Modo Carreira FIFA/EA FC.
 
-    clubes_bloqueados = ", ".join(
-        list(historico_clubes)[-5:]
-    )
+LIGA SELECIONADA: {liga}
 
-    paises_bloqueados = ", ".join(
-        list(historico_paises)[-3:]
-    )
+REGRAS IMPORTANTES:
+- Escolha um clube REALISTA dessa liga (NÃO os mais óbvios como Real Madrid, Bayern, PSG)
+- Evite clubes recentes: {clubes_bloqueados}
+- Evite países recentes: {paises_bloqueados}
+- Crie uma narrativa imersiva com contexto histórico real
+- Defina 3-4 objetivos específicos e desafiadores
+- Recomende 3-5 jogadores REAIS que se encaixam no perfil do clube
 
-    prompt = f"""
-Crie um desafio criativo e realista de Modo Carreira FIFA.
-
-LIGA:
-{liga}
-
-IMPORTANTE:
-- Escolha um clube REALISTA dessa liga
-- NÃO escolha clubes extremamente óbvios
-- Evite repetir clubes recentes
-
-Crie:
-- narrativa imersiva
-- objetivos difíceis
-- restrições únicas
-- contexto realista
-
-Evite repetir:
-Clubes recentes: {clubes_bloqueados}
-Países recentes: {paises_bloqueados}
-
-Retorne apenas JSON válido.
-"""
-
+Retorne APENAS o JSON, sem markdown ou texto extra."""
+    
     return prompt
 
 # =========================================================
-# GERAÇÃO
+# GERAÇÃO DO DESAFIO
 # =========================================================
 
 def generate_career_challenge():
-
     max_tentativas = 3
-
+    
     for tentativa in range(max_tentativas):
-
         try:
-
             liga = escolher_liga()
-
             prompt = gerar_prompt(liga)
-
             modelo = random.choice(MODELOS)
-
-            print(f"Modelo usado: {modelo}")
-
+            
+            print(f"\n🔄 Tentativa {tentativa + 1}/{max_tentativas}")
+            print(f"📌 Liga: {liga}")
+            print(f"🤖 Modelo: {modelo}")
+            
             response = client.models.generate_content(
-
                 model=modelo,
-
                 contents=prompt,
-
                 config=types.GenerateContentConfig(
-
                     system_instruction=SYSTEM_INSTRUCTION,
-
                     response_mime_type="application/json",
-
                     response_schema=MODO_CARREIRA_SCHEMA,
-
-                    temperature=0.9,
-
-                    top_p=0.9,
-
-                    top_k=32,
-
-                    max_output_tokens=500
+                    temperature=0.85,
+                    top_p=0.92,
+                    top_k=40,
+                    max_output_tokens=1200
                 )
             )
-
-            if not response.text:
-
-                raise Exception("Resposta vazia da IA.")
-
+            
+            if not response or not response.text:
+                print("❌ Resposta vazia da IA")
+                continue
+            
             texto = response.text.strip()
-
             desafio = json.loads(texto)
-
-            liga_gerada = desafio.get(
-                "liga_do_clube",
-                liga
-            )
-
-            clube_gerado = desafio.get(
-                "clube_escolhido",
-                "Clube não informado"
-            )
-
-            # =========================================================
-            # VALIDAÇÃO
-            # =========================================================
-
+            
+            # Validações
+            liga_gerada = desafio.get("liga_do_clube", liga)
+            clube_gerado = desafio.get("clube_escolhido", "")
+            
             if not validar_liga(liga_gerada):
-
-                print(f"Liga inválida: {liga_gerada}")
-
+                print(f"⚠️ Liga inválida: {liga_gerada}")
                 continue
-
+            
             if clube_gerado.lower() in historico_clubes:
-
-                print(f"Clube repetido: {clube_gerado}")
-
+                print(f"⚠️ Clube repetido: {clube_gerado}")
                 continue
-
-            registrar_desafio(
-                clube_gerado,
-                liga_gerada
-            )
-
+            
+            # Registrar no histórico
+            registrar_desafio(clube_gerado, liga_gerada)
+            
+            print(f"✅ Desafio gerado com sucesso!")
+            print(f"⚽ Clube: {clube_gerado}")
+            print(f"🏆 Liga: {liga_gerada}")
+            
             return desafio
-
-        except json.JSONDecodeError:
-
-            print("JSON inválido recebido.")
-
-            time.sleep(2)
-
+            
+        except json.JSONDecodeError as e:
+            print(f"❌ JSON inválido: {e}")
+            time.sleep(1)
+            
         except Exception as e:
-
-            print(f"Erro tentativa {tentativa + 1}: {e}")
-
+            print(f"❌ Erro na tentativa {tentativa + 1}: {str(e)}")
             time.sleep(2)
-
+    
+    # Fallback em caso de erro
     return {
-        "erro": True,
-        "mensagem": "IA temporariamente indisponível."
+        "clube_escolhido": "Desafio Temporário",
+        "liga_do_clube": "Liga de Teste",
+        "titulo_do_desafio": "Modo Carreira - Gerar Novamente",
+        "contexto_historico": "A IA está temporariamente indisponível. Por favor, tente novamente em alguns instantes.",
+        "objetivos_da_diretoria": [
+            "Tentar gerar um novo desafio",
+            "Verificar a conexão com a API",
+            "Garantir que a chave do Gemini está válida"
+        ],
+        "jogadores_recomendados": [
+            {
+                "nome": "Tente novamente",
+                "posicao": "GER",
+                "clube_atual": "Sistema",
+                "idade": 25,
+                "justificativa": "Clique em 'Gerar novo desafio' para tentar novamente."
+            }
+        ]
     }
 
 # =========================================================
-# ROTAS
+# ROTAS DA API
 # =========================================================
 
 @app.route("/")
 def root():
-
     return jsonify({
         "status": "success",
         "api": "Gerador de Modo Carreira",
-        "version": "4.2",
-        "modelos": MODELOS,
-        "ligas": len(LIGAS_PERMITIDAS)
+        "version": "5.0",
+        "modelos_disponiveis": MODELOS,
+        "total_ligas": len(LIGAS_PERMITIDAS)
     })
 
 @app.route("/generate", methods=["GET"])
 def generate():
-
     try:
-
         desafio = generate_career_challenge()
-
-        if contem_conteudo_proibido(
-            json.dumps(desafio)
-        ):
-
+        
+        # Verificar conteúdo proibido
+        if contem_conteudo_proibido(json.dumps(desafio)):
             return jsonify({
                 "status": "error",
-                "message": "Conteúdo bloqueado."
+                "message": "Conteúdo bloqueado pelo sistema de moderação."
             }), 400
-
+        
         return jsonify({
             "status": "success",
             "dados_desafio": desafio,
             "stats": {
                 "historico_clubes": list(historico_clubes),
                 "historico_ligas": list(historico_ligas),
-                "historico_paises": list(historico_paises)
+                "historico_paises": list(historico_paises),
+                "total_gerados": len(historico_clubes)
             }
         })
-
+        
     except Exception as e:
-
+        print(f"❌ Erro na rota /generate: {str(e)}")
         return jsonify({
             "status": "error",
-            "message": str(e)
+            "message": f"Erro interno: {str(e)}"
         }), 500
 
 @app.route("/stats")
 def stats():
-
     return jsonify({
         "historico_clubes": list(historico_clubes),
         "historico_ligas": list(historico_ligas),
@@ -375,23 +325,29 @@ def stats():
 
 @app.route("/ligas")
 def ligas():
-
     return jsonify({
         "total": len(LIGAS_PERMITIDAS),
         "ligas": LIGAS_PERMITIDAS,
-        "competicoes": COMPETICOES_CONTINENTAIS
+        "competicoes_continentais": COMPETICOES_CONTINENTAIS
     })
 
 @app.route("/reset", methods=["POST"])
 def reset():
-
     historico_clubes.clear()
     historico_ligas.clear()
     historico_paises.clear()
-
     return jsonify({
         "status": "success",
-        "message": "Histórico resetado."
+        "message": "Histórico de desafios resetado com sucesso."
+    })
+
+@app.route("/health")
+def health():
+    """Endpoint para verificar se a API está funcionando"""
+    return jsonify({
+        "status": "healthy",
+        "api_key_loaded": bool(GEMINI_API_KEY),
+        "modelos": MODELOS
     })
 
 # =========================================================
@@ -399,28 +355,23 @@ def reset():
 # =========================================================
 
 if __name__ == "__main__":
-
     print("=" * 60)
-    print("🎮 GERADOR DE MODO CARREIRA v4.2")
+    print("🎮 GERADOR DE MODO CARREIRA v5.0")
     print("=" * 60)
-
     print(f"✅ {len(LIGAS_PERMITIDAS)} ligas carregadas")
     print("✅ Sistema anti-repetição ativo")
-    print(f"✅ Modelos: {', '.join(MODELOS)}")
-
+    print(f"✅ Modelos disponíveis: {', '.join(MODELOS)}")
+    print(f"✅ API Key carregada: {GEMINI_API_KEY[:10]}...")
     print("=" * 60)
-
-    print("🌐 API:")
-    print("http://localhost:5000")
-
+    print("🌐 API rodando em: http://localhost:5000")
     print("=" * 60)
-
-    print("📌 ROTAS:")
-    print("/generate")
-    print("/stats")
-    print("/ligas")
-    print("/reset")
-
+    print("📌 Endpoints disponíveis:")
+    print("   GET  /            - Informações da API")
+    print("   GET  /generate    - Gerar novo desafio")
+    print("   GET  /stats       - Estatísticas do histórico")
+    print("   GET  /ligas       - Lista de ligas disponíveis")
+    print("   POST /reset       - Resetar histórico")
+    print("   GET  /health      - Health check")
     print("=" * 60)
-
-    app.run(host="0.0.0.0", port=5000)
+    
+    app.run(host="0.0.0.0", port=5000, debug=True)
