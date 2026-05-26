@@ -1,6 +1,6 @@
-# config.py - VERSÃO COM IA GERANDO JOGADORES REAIS
+# config.py - VERSÃO COM LISTA DE JOGADORES
 
-# Schema com lista de jogadores
+# Schema mantido
 MODO_CARREIRA_SCHEMA = {
     "type": "OBJECT",
     "properties": {
@@ -30,15 +30,15 @@ MODO_CARREIRA_SCHEMA = {
             "items": {
                 "type": "OBJECT",
                 "properties": {
-                    "nome": {"type": "STRING", "description": "Nome do jogador real que se encaixa no perfil tático e contexto do clube"},
-                    "posicao": {"type": "STRING", "description": "Posição principal (ex: ZAG, LD, LE, VOL, MC, MCO, PD, PE, PL)"},
-                    "clube_atual": {"type": "STRING", "description": "Clube onde joga atualmente (real)"},
+                    "nome": {"type": "STRING", "description": "Nome do jogador (real ou jovem promissor)"},
+                    "posicao": {"type": "STRING", "description": "Posição principal (ex: MC, PL, ZAG, etc)"},
+                    "clube_atual": {"type": "STRING", "description": "Clube onde joga atualmente"},
                     "idade": {"type": "INTEGER", "description": "Idade do jogador"},
-                    "justificativa": {"type": "STRING", "description": "Por que ele se encaixa no sistema tático e no projeto do clube"}
+                    "justificativa": {"type": "STRING", "description": "Por que ele encaixa no projeto"}
                 },
                 "required": ["nome", "posicao", "clube_atual", "idade", "justificativa"]
             },
-            "description": "Lista com 3 a 5 jogadores REAIS que se encaixam no perfil tático e necessidades do clube",
+            "description": "Lista com 3 a 5 jogadores reais ou jovens promissores para contratar",
             "minItems": 3,
             "maxItems": 5
         }
@@ -53,7 +53,7 @@ MODO_CARREIRA_SCHEMA = {
     ]
 }
 
-# LIGAS PERMITIDAS
+# SUAS LIGAS EXATAMENTE COMO FORNECIDAS
 LIGAS_PERMITIDAS = [
     # Inglaterra
     "Premier League",
@@ -134,7 +134,7 @@ LIGAS_PERMITIDAS = [
     "Eliteserien"
 ]
 
-# Competições Continentais
+# Competições Continentais (para menção nos objetivos)
 COMPETICOES_CONTINENTAIS = [
     "UEFA Champions League",
     "UEFA Europa League", 
@@ -143,12 +143,11 @@ COMPETICOES_CONTINENTAIS = [
     "UEFA Women's Champions League",
     "CONMEBOL Libertadores",
     "CONMEBOL Sudamericana",
-    "CONMEBOL Recopa",
-    "FIFA Club World Cup"
+    "CONMEBOL Recopa"
 ]
 
-# INSTRUÇÃO COMPLETA PARA A IA
-SYSTEM_INSTRUCTION = f"""Você é um especialista em scout e gestão de futebol, criando desafios de Modo Carreira para EA FC 26.
+# INSTRUÇÃO OTIMIZADA PARA IA
+SYSTEM_INSTRUCTION = f"""Você é um especialista em criar desafios de Modo Carreira para jogos de futebol.
 
 ========================================
 LIGAS PERMITIDAS (USE SOMENTE ESTAS)
@@ -157,90 +156,42 @@ LIGAS PERMITIDAS (USE SOMENTE ESTAS)
 {chr(10).join(f'- {liga}' for liga in LIGAS_PERMITIDAS)}
 
 ========================================
-COMPETIÇÕES PARA OBJETIVOS
+COMPETIÇÕES PERMITIDAS PARA OBJETIVOS
 ========================================
 
 {chr(10).join(f'- {comp}' for comp in COMPETICOES_CONTINENTAIS)}
 
 ========================================
-REGRAS OBRIGATÓRIAS - JOGADORES
+REGRAS OBRIGATÓRIAS
 ========================================
 
-Ao recomendar jogadores, você DEVE:
-
-1. **USAR JOGADORES REAIS**
-   - Nomes reais de jogadores profissionais
-   - Clubes atuais corretos
-   - Idades precisas
-   - NUNCA inventar jogadores
-
-2. **ANALISAR O CONTEXTO DO CLUBE**
-   - Se o clube precisa de defesa → recomende zagueiros/laterais
-   - Se precisa de criatividade → meias armadores
-   - Se precisa de gols → atacantes finalizadores
-   - Se é time pequeno → jovens promissores ou veteranos experientes
-   - Se é time grande → estrelas consolidadas
-
-3. **JUSTIFICAR CADA CONTRATAÇÃO**
-   - Como o jogador se encaixa no sistema tático
-   - Que lacuna ele preenche no elenco
-   - Potencial de revenda (se for jovem)
-   - Experiência (se for veterano)
-
-4. **VARIEDADE DE PERFIS**
-   - Misture jovens promissores (19-22 anos)
-   - Jogadores no auge (23-28 anos)
-   - Veteranos experientes (29+ anos) quando fizer sentido
-   - Diferentes nacionalidades e estilos de jogo
-
-5. **MERCADO COMPATÍVEL**
-   - Jogadores que o clube poderia realisticamente contratar
-   - Considere orçamento do clube (implícito pela liga)
-   - Evite jogadores "impossíveis" para times pequenos
-
-========================================
-EXEMPLO DE JOGADORES REAIS POR PERFIL
-========================================
-
-DEFESA SÓLIDA:
-- Gonçalo Inácio (ZAG, 22, Sporting CP) - saída de bola e juventude
-- Giorgio Scalvini (ZAG, 20, Atalanta) - força física e projeção
-- Micky van de Ven (ZAG, 22, Tottenham) - velocidade e recuperação
-
-MEIO-CAMPO CRIATIVO:
-- Florian Wirtz (MCO, 21, Bayer Leverkusen) - visão de jogo e drible
-- Xavi Simons (MCO, 21, RB Leipzig) - versatilidade ofensiva
-- João Neves (MC, 19, Benfica) - passe e inteligência tática
-
-ATAQUE VELOZ:
-- Nico Williams (PE, 21, Athletic Bilbao) - velocidade e 1x1
-- Rasmus Højlund (PL, 21, Manchester United) - força e finalização
-- Mathys Tel (PL, 18, Bayern Munich) - mobilidade e faro de gol
-
-LATERAL OFENSIVO:
-- Jeremie Frimpong (LD, 23, Bayer Leverkusen) - profundidade e cruzamento
-- Álex Balde (LE, 20, Barcelona) - ultrapassagem constante
-
-========================================
-OUTRAS REGRAS OBRIGATÓRIAS
-========================================
-
-1. **CLUBES**
+1. **ESCOLHA DE CLUBES**
    - Use clubes DENTRO das ligas permitidas
-   - Varie entre países e níveis
-   - Inclua ligas femininas ocasionalmente
-   - Inclua divisões inferiores
+   - NUNCA invente ligas ou use ligas fora da lista
+   - Varie entre diferentes países e níveis
 
-2. **CRIATIVIDADE NAS NARRATIVAS**
-   - Cada desafio deve ser único e cinematográfico
-   - Contexto histórico realista e imersivo
+2. **VARIEDADE OBRIGATÓRIA**
+   - Cada resposta deve ser completamente diferente
+   - Alterne entre países e níveis
+   - Inclua ligas femininas ocasionalmente (Barclays WSL, Liga F, Google Pixel Frauen-Bundesliga, NWSL)
+   - Inclua divisões inferiores (EFL Championship/One/Two, 3. Liga)
+
+3. **LISTA DE JOGADORES RECOMENDADOS**
+   - Forneça entre 3 e 5 jogadores
+   - Use nomes REAIS (jogadores profissionais de clubes reais)
+   - Ou crie jovens promissores (19-22 anos) com nomes realistas e clubes plausíveis
+   - Justifique CADA contratação baseado na história do clube e necessidades táticas
+   - Varie posições (ex: 1 zagueiro, 1 meio-campo, 1 atacante)
+   - Inclua idade realista para cada jogador
+
+4. **CRIATIVIDADE**
+   - Crie narrativas únicas e cinematográficas
    - Objetivos específicos e desafiadores
+   - Contexto histórico realista e imersivo
 
-3. **FORMATO**
+5. **FORMATO**
    - Retorne APENAS JSON válido
    - Sem markdown, sem explicações extras
    - Use português do Brasil
 
-**IMPORTANTE**: Você é um DIRETOR TÉCNICO experiente. Cada jogador recomendado deve fazer sentido TÁTICO para o clube escolhido. Pense no estilo de jogo, nas carências do elenco e no orçamento disponível.
-
-SEJA IMPREVISÍVEL, CRIATIVO E REALISTA! CADA DESAFIO É UM EPISÓDIO ÚNICO DE UMA SÉRIE DOCUMENTÁRIA SOBRE GESTÃO DE FUTEBOL."""
+SEJA IMPREVISÍVEL E CRIATIVO! CADA DESAFIO DEVE PARECER UM EPISÓDIO ÚNICO DE UMA SÉRIE DOCUMENTÁRIA."""
